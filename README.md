@@ -1,6 +1,7 @@
 # framework2529
 sprint web dynamique
 
+SRPINT 1
 1- mettez framework2529.jar dans votre librairie
 2- dans votre fichier web.xml ajoutez:
     <context-param>
