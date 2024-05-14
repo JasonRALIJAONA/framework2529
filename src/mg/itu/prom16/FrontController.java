@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -66,6 +68,7 @@ public class FrontController extends HttpServlet {
         for (String str : this.getControllerList()){
             out.println("<p>"+ str +"</p>");
         }
+        out.println("<p> number of classes"+ this.getControllerList().size() +"</p>");
         out.println("</BODY></HTML>");
     }
 
@@ -80,7 +83,9 @@ public class FrontController extends HttpServlet {
         
         while (resources.hasMoreElements()) {
             URL resource = resources.nextElement();
-            directories.add(new File(resource.getFile()));
+            String decodePath=URLDecoder.decode(resource.getFile(), StandardCharsets.UTF_8.name());
+            decodePath=decodePath.substring(1);
+            directories.add(new File(decodePath));
         }
         
         ArrayList<Class<?>> classes = new ArrayList<>();
