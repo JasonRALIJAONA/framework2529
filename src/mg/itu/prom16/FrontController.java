@@ -15,7 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 public class FrontController extends HttpServlet {
-    boolean checked;
+    boolean checked = false;
     ArrayList<String> controllerList;
 
     public ArrayList<String> getControllerList() {
@@ -55,6 +55,7 @@ public class FrontController extends HttpServlet {
         if (!isChecked()) {
             try {
                 getClasses();
+                setChecked(true);
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {
