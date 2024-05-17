@@ -84,8 +84,9 @@ public class FrontController extends HttpServlet {
         
         if (getMap().containsKey(path)) {
             Mapping mp= getMap().get(path);
-            out.println("<BIG> Controller"+ mp.getClassName() +"</BIG>");
-            out.println("<BIG> Method"+ mp.getMethodName() +"</BIG>");
+            out.println("<BIG> Controller: "+ mp.getClassName() +"</BIG>");
+            out.println("<br>");
+            out.println("<BIG> Method: "+ mp.getMethodName() +"</BIG>");
         }else{
             out.println("<BIG> Method not found</BIG>");
         }
