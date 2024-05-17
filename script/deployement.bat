@@ -6,7 +6,6 @@ set BIN_DIR=D:/JASON/programmes/JSP/sprint/framework2529/bin
 set LIB_DIR=C:/Program Files/Apache Software Foundation/Tomcat 10.1/lib/servlet-api.jar
 set WORK_DIR=D:/JASON/programmes/JSP/sprint/framework2529
 
-mkdir "%TEMP_DIR%"
 mkdir "%TEMP_SRC%"
 
 FOR /R "%SRC_DIR%" %%F IN (*.java) DO (
