@@ -3,13 +3,17 @@ package mg.itu.prom16;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import mg.itu.prom16.annotation.Controller;
+import mg.itu.prom16.annotation.JGet;
+import mg.itu.prom16.util.Mapping;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -17,8 +21,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 public class FrontController extends HttpServlet {
-    boolean checked = false;
     ArrayList<String> controllerList;
+    HashMap <String , Mapping> map = new HashMap<>();
+
+    public HashMap<String , Mapping>  getMap (){
+        return this.map;
+    }
+
+    public void setMap(HashMap<String , Mapping> mp){
+        this.map=mp;
+    }
 
     public ArrayList<String> getControllerList() {
         return this.controllerList;
@@ -26,14 +38,6 @@ public class FrontController extends HttpServlet {
 
     public void setControllerList(ArrayList<String> controllerList) {
         this.controllerList = controllerList;
-    }
-
-    public boolean isChecked() {
-        return this.checked;
-    }
-
-    public void setChecked(boolean checked) {
-        this.checked = checked;
     }
 
     @Override
@@ -46,29 +50,48 @@ public class FrontController extends HttpServlet {
         processRequest(req , res);
     }
 
+    @Override
+    public void init() throws ServletException {
+        super.init();
+        try {
+            getClasses();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void processRequest (HttpServletRequest req , HttpServletResponse res)throws ServletException, IOException{
         res.setContentType("text/html");
         PrintWriter out = res.getWriter();
-        // String message = req.getRequestURL().toString();
+        String message = req.getRequestURL().toString();
+        int lastINdex=message.lastIndexOf("/");
+
+        String path="";
+
+        if (lastINdex != -1) {
+            path=message.substring(lastINdex + 1);
+        }
+
         out.println("<HTML>");
         out.println("<HEAD><TITLE>HELLO WORLD</TITLE></HEAD>");
         out.println("<BODY>");
 
-        if (!isChecked()) {
-            try {
-                getClasses();
-                setChecked(true);
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        // for (String str : this.getControllerList()){
+        //     out.println("<p>"+ str +"</p>");
+        // }
+        
+        if (getMap().containsKey(path)) {
+            Mapping mp= getMap().get(path);
+            out.println("<BIG> Controller: "+ mp.getClassName() +"</BIG>");
+            out.println("<br>");
+            out.println("<BIG> Method: "+ mp.getMethodName() +"</BIG>");
+        }else{
+            out.println("<BIG> Method not found</BIG>");
         }
-
-        for (String str : this.getControllerList()){
-            out.println("<p>"+ str +"</p>");
-        }
-        out.println("<p> number of classes"+ this.getControllerList().size() +"</p>");
+        
+        // out.println("<p> number of classes"+ this.getControllerList().size() +"</p>");
         out.println("</BODY></HTML>");
     }
 
@@ -93,8 +116,25 @@ public class FrontController extends HttpServlet {
             classes.addAll(findClasses(directory, packageName));
         }
 
+        // for (Class<?> clazz : classes) {
+        //     if (clazz.isAnnotationPresent(Controller.class)) {
+        //         classnames.add(clazz.getName());
+        //     }
+        // }
+
         for (Class<?> clazz : classes) {
             if (clazz.isAnnotationPresent(Controller.class)) {
+                Method[] methods=clazz.getDeclaredMethods();
+
+                for (Method method : methods) {
+                    if (method.isAnnotationPresent(JGet.class)) {
+                        JGet jget=method.getAnnotation(JGet.class);
+                        if (jget.value().isEmpty() == false) {
+                            Mapping mapping=new Mapping(clazz.getName(), method.getName());
+                            this.getMap().put(jget.value(), mapping);
+                        }
+                    }
+                }
                 classnames.add(clazz.getName());
             }
         }

@@ -8,3 +8,6 @@ SRPINT 1
         <param-name>controller</param-name>
         <param-value>package de vorte controler</param-value>
     </context-param>
+
+3- Annotez par @Controller vos controller
+4- Annotez par @Jget les methodes : (exemple @JGet(path))
