@@ -128,9 +128,9 @@ public class FrontController extends HttpServlet {
                 for (Method method : methods) {
                     if (method.isAnnotationPresent(JGet.class)) {
                         JGet jget=method.getAnnotation(JGet.class);
-                        if (jget.path().isEmpty() == false) {
+                        if (jget.value().isEmpty() == false) {
                             Mapping mapping=new Mapping(clazz.getName(), method.getName());
-                            this.getMap().put(path, mapping);
+                            this.getMap().put(jget.value(), mapping);
                         }
                     }
                 }

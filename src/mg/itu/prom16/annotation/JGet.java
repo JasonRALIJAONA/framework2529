@@ -2,9 +2,9 @@ package mg.itu.prom16.annotation;
 
 import java.lang.annotation.*;
 
-@Target(ElementType.FIELD)
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface JGet {
-    String path() ;
+    String value() default"" ;
 }
 
