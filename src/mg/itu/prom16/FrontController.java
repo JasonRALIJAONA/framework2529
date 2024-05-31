@@ -95,6 +95,7 @@ public class FrontController extends HttpServlet {
                 out.println("<br>");
                 out.println("<BIG> Result: "+ result +"</BIG>");
             }else if (result instanceof ModelView){
+                System.out.println("nandalo tato");
                 String url= ((ModelView)result).getUrl();
                 
                 HashMap<String , Object> data= ((ModelView)result).getData();
