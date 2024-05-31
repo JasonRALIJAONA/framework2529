@@ -14,6 +14,7 @@ import java.util.List;
 import mg.itu.prom16.annotation.Controller;
 import mg.itu.prom16.annotation.JGet;
 import mg.itu.prom16.util.Mapping;
+import mg.itu.prom16.util.ModelView;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -81,14 +82,30 @@ public class FrontController extends HttpServlet {
         // for (String str : this.getControllerList()){
         //     out.println("<p>"+ str +"</p>");
         // }
-        
+         
         if (getMap().containsKey(path)) {
             Mapping mp= getMap().get(path);
             out.println("<BIG> Controller: "+ mp.getClassName() +"</BIG>");
             out.println("<br>");
             out.println("<BIG> Method: "+ mp.getMethodName() +"</BIG>");
-            out.println("<br>");
-            out.println("<BIG> Result: "+ invokeMethod(mp.getClassName(), mp.getMethodName()) +"</BIG>");
+
+            Object result=invokeMethod(mp.getClassName(), mp.getMethodName());
+
+            if (result instanceof String) {
+                out.println("<br>");
+                out.println("<BIG> Result: "+ result +"</BIG>");
+            }else if (result instanceof ModelView){
+                String url= ((ModelView)result).getUrl();
+                
+                HashMap<String , Object> data= ((ModelView)result).getData();
+                
+                for (String key : data.keySet()) {
+                    Object value = data.get(key);
+                    req.setAttribute(key, value);
+                }
+
+                req.getRequestDispatcher(url).forward(req, res);    
+            }
         }else{
             out.println("<BIG> Method not found</BIG>");
         }
