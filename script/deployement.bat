@@ -5,6 +5,7 @@ set TEMP_SRC=D:/JASON/programmes/JSP/sprint/framework2529/temp-src
 set BIN_DIR=D:/JASON/programmes/JSP/sprint/framework2529/bin
 set LIB_DIR=C:/Program Files/Apache Software Foundation/Tomcat 10.1/lib/servlet-api.jar
 set WORK_DIR=D:/JASON/programmes/JSP/sprint/framework2529
+set TEST_DIR=D:/JASON/programmes/JSP/sprint/test
 
 mkdir "%TEMP_SRC%"
 
@@ -17,3 +18,7 @@ javac -sourcepath "%TEMP_SRC%" -d "%BIN_DIR%" -cp "%LIB_DIR%" *.java
 
 cd "%BIN_DIR%"
 jar -cvf "%WORK_DIR%/framework2529.jar" -C "%BIN_DIR%" .
+
+@REM copy du jar vers le test
+cd ..
+copy framework2529.jar "%TEST_DIR%/lib/"
