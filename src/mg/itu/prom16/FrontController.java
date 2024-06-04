@@ -155,9 +155,17 @@ public class FrontController extends HttpServlet {
                     URL resource = resources.nextElement();
                     String decodePath=URLDecoder.decode(resource.getFile(), StandardCharsets.UTF_8.name());
                     decodePath=decodePath.substring(1);
+                    File file = new File(decodePath);
+                    if (!file.exists()) {
+                        exceptions.add("The package does not exist.");
+                    }
                     directories.add(new File(decodePath));
                 }
                 
+                if (directories.isEmpty()) {
+                    exceptions.add("The package is empty.")
+                }
+
                 ArrayList<Class<?>> classes = new ArrayList<>();
                 for (File directory : directories) {
                     classes.addAll(findClasses(directory, packageName));
