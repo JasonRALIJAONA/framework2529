@@ -179,7 +179,7 @@ public class FrontController extends HttpServlet {
                                 if (jget.value().isEmpty() == false) {
                                     Mapping mapping=new Mapping(clazz.getName(), method.getName());
                                     if (this.getMap().containsKey(jget.value())) {
-                                        exceptions.add("The controller with an URL "+ jget.value() +" already exists.");
+                                        exceptions.add("The controller with an URL \""+ jget.value() +"\" already exists.");
                                     }else{
                                         this.getMap().put(jget.value(), mapping);
                                     }
