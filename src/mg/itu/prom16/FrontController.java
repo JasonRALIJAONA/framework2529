@@ -163,7 +163,7 @@ public class FrontController extends HttpServlet {
                 }
                 
                 if (directories.isEmpty()) {
-                    exceptions.add("The package is empty.")
+                    exceptions.add("The package is empty.");
                 }
 
                 ArrayList<Class<?>> classes = new ArrayList<>();
