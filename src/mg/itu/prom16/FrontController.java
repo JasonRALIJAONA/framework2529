@@ -122,7 +122,7 @@ public class FrontController extends HttpServlet {
         // out.println("<p> number of classes"+ this.getControllerList().size() +"</p>");
 
         for (String str : exceptions){
-            out.println("<p>"+ str +"</p>");
+            out.println("<BIG>"+ str +"</BIG>");
         }
         out.println("</BODY></HTML>");
     }
