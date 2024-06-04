@@ -116,13 +116,14 @@ public class FrontController extends HttpServlet {
                 exceptions.add("The return type of the method is not supported.");
             }
         }else{
-            out.println("<BIG> Method not found</BIG>");
+            exceptions.add("Method not found.");
         }
         
         // out.println("<p> number of classes"+ this.getControllerList().size() +"</p>");
 
         for (String str : exceptions){
             out.println("<BIG>"+ str +"</BIG>");
+            out.println("<br>");
         }
         out.println("</BODY></HTML>");
     }
@@ -155,15 +156,11 @@ public class FrontController extends HttpServlet {
                     URL resource = resources.nextElement();
                     String decodePath=URLDecoder.decode(resource.getFile(), StandardCharsets.UTF_8.name());
                     decodePath=decodePath.substring(1);
-                    File file = new File(decodePath);
-                    if (!file.exists()) {
-                        exceptions.add("The package does not exist.");
-                    }
                     directories.add(new File(decodePath));
                 }
                 
                 if (directories.isEmpty()) {
-                    exceptions.add("The package is empty.");
+                    exceptions.add("The package does not exist.");
                 }
 
                 ArrayList<Class<?>> classes = new ArrayList<>();
