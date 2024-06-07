@@ -24,8 +24,6 @@ import jakarta.servlet.http.HttpServletResponse;
 public class FrontController extends HttpServlet {
     ArrayList<String> controllerList;
     HashMap <String , Mapping> map = new HashMap<>();
-    ArrayList<String>exceptions = new ArrayList<>();
-
     public HashMap<String , Mapping>  getMap (){
         return this.map;
     }
@@ -58,7 +56,7 @@ public class FrontController extends HttpServlet {
         try {
             getClasses();
         } catch (Exception e) {
-            exceptions.add(e.getMessage());
+            throw new ServletException(e);
         }
     }
 
@@ -113,18 +111,13 @@ public class FrontController extends HttpServlet {
 
                 req.getRequestDispatcher(url).forward(req, res);    
             }else{
-                exceptions.add("The return type of the method is not supported.");
+                throw new ServletException("Invalid return type.");
             }
         }else{
-            exceptions.add("Method not found.");
+            throw new ServletException("The controller with an URL \""+ path +"\" does not exist.");
         }
         
         // out.println("<p> number of classes"+ this.getControllerList().size() +"</p>");
-
-        for (String str : exceptions){
-            out.println("<BIG>"+ str +"</BIG>");
-            out.println("<br>");
-        }
         out.println("</BODY></HTML>");
     }
 
@@ -142,64 +135,60 @@ public class FrontController extends HttpServlet {
         return null;
     }
 
-    public void getClasses() {
-        try {
-                ArrayList<String> classnames=new ArrayList<>();
-                ServletContext context = getServletContext();
-                String packageName=context.getInitParameter("controller");
-                ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-                String path = packageName.replace('.', '/');
-                Enumeration<URL> resources = classLoader.getResources(path);
-                List<File> directories = new ArrayList<>();
-                
-                while (resources.hasMoreElements()) {
-                    URL resource = resources.nextElement();
-                    String decodePath=URLDecoder.decode(resource.getFile(), StandardCharsets.UTF_8.name());
-                    decodePath=decodePath.substring(1);
-                    directories.add(new File(decodePath));
-                }
-                
-                if (directories.isEmpty()) {
-                    exceptions.add("The package does not exist.");
-                }
+    public void getClasses() throws Exception{
 
-                ArrayList<Class<?>> classes = new ArrayList<>();
-                for (File directory : directories) {
-                    classes.addAll(findClasses(directory, packageName));
-                }
+        ArrayList<String> classnames=new ArrayList<>();
+        ServletContext context = getServletContext();
+        String packageName=context.getInitParameter("controller");
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        String path = packageName.replace('.', '/');
+        Enumeration<URL> resources = classLoader.getResources(path);
+        List<File> directories = new ArrayList<>();
         
-                // for (Class<?> clazz : classes) {
-                //     if (clazz.isAnnotationPresent(Controller.class)) {
-                //         classnames.add(clazz.getName());
-                //     }
-                // }
+        while (resources.hasMoreElements()) {
+            URL resource = resources.nextElement();
+            String decodePath=URLDecoder.decode(resource.getFile(), StandardCharsets.UTF_8.name());
+            decodePath=decodePath.substring(1);
+            directories.add(new File(decodePath));
+        }
         
-                for (Class<?> clazz : classes) {
-                    if (clazz.isAnnotationPresent(Controller.class)) {
-                        Method[] methods=clazz.getDeclaredMethods();
-        
-                        for (Method method : methods) {
-                            if (method.isAnnotationPresent(JGet.class)) {
-                                JGet jget=method.getAnnotation(JGet.class);
-                                if (jget.value().isEmpty() == false) {
-                                    Mapping mapping=new Mapping(clazz.getName(), method.getName());
-                                    if (this.getMap().containsKey(jget.value())) {
-                                        exceptions.add("The controller with an URL \""+ jget.value() +"\" already exists.");
-                                    }else{
-                                        this.getMap().put(jget.value(), mapping);
-                                    }
-                                }
+        if (directories.isEmpty()) {
+            throw new Exception("The controller package is empty.");
+        }
+
+        ArrayList<Class<?>> classes = new ArrayList<>();
+        for (File directory : directories) {
+            classes.addAll(findClasses(directory, packageName));
+        }
+
+        // for (Class<?> clazz : classes) {
+        //     if (clazz.isAnnotationPresent(Controller.class)) {
+        //         classnames.add(clazz.getName());
+        //     }
+        // }
+
+        for (Class<?> clazz : classes) {
+            if (clazz.isAnnotationPresent(Controller.class)) {
+                Method[] methods=clazz.getDeclaredMethods();
+
+                for (Method method : methods) {
+                    if (method.isAnnotationPresent(JGet.class)) {
+                        JGet jget=method.getAnnotation(JGet.class);
+                        if (jget.value().isEmpty() == false) {
+                            Mapping mapping=new Mapping(clazz.getName(), method.getName());
+                            if (this.getMap().containsKey(jget.value())) {
+                                throw new Exception("The URL \""+ jget.value() +"\" is already used.");
+                            }else{
+                                this.getMap().put(jget.value(), mapping);
                             }
                         }
-                        classnames.add(clazz.getName());
                     }
                 }
-        
-                this.setControllerList(classnames);
-        } catch (Exception e) {
-            exceptions.add(e.getMessage());
+                classnames.add(clazz.getName());
+            }
         }
-     
+
+        this.setControllerList(classnames);
     }
 
     private static List<Class<?>> findClasses(File directory, String packageName) throws ClassNotFoundException {
