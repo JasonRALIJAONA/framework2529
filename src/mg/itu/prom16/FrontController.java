@@ -61,7 +61,6 @@ public class FrontController extends HttpServlet {
     }
 
     public void processRequest (HttpServletRequest req , HttpServletResponse res)throws ServletException, IOException{
-        res.setContentType("text/html");
         PrintWriter out = res.getWriter();
 
         String message = req.getRequestURL().toString();
@@ -73,32 +72,24 @@ public class FrontController extends HttpServlet {
             path=message.substring(lastINdex + 1);
         }
 
-        out.println("<HTML>");
-        out.println("<HEAD><TITLE>HELLO WORLD</TITLE></HEAD>");
-        out.println("<BODY>");
-
         // for (String str : this.getControllerList()){
         //     out.println("<p>"+ str +"</p>");
         // }
          
         if (getMap().containsKey(path)) {
             Mapping mp= getMap().get(path);
-            out.println("<BIG> Controller: "+ mp.getClassName() +"</BIG>");
-            out.println("<br>");
-            out.println("<BIG> Method: "+ mp.getMethodName() +"</BIG>");
 
             Object result=null;
             try {
                 result=invokeMethod(mp.getClassName(), mp.getMethodName());
             } catch (Exception e) {
-                @SuppressWarnings("unchecked")
-                ArrayList<String> exceptions = (ArrayList<String>) getServletContext().getAttribute("errors");
-                exceptions.add(e.getMessage());
+                throw new ServletException(e);
             }
 
             if (result instanceof String) {
-                out.println("<br>");
-                out.println("<BIG> Result: "+ result +"</BIG>");
+                out.println("Controller: "+ mp.getClassName());
+                out.println("Method: "+ mp.getMethodName());
+                out.println("Result: "+ result);
             }else if (result instanceof ModelView){
                 String url= ((ModelView)result).getUrl();
                 
@@ -114,11 +105,11 @@ public class FrontController extends HttpServlet {
                 throw new ServletException("Invalid return type.");
             }
         }else{
-            throw new ServletException("The controller with an URL \""+ path +"\" does not exist.");
+            // do a 404 error
+            res.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
         
-        // out.println("<p> number of classes"+ this.getControllerList().size() +"</p>");
-        out.println("</BODY></HTML>");
+        // out.println("number of classes"+ this.getControllerList().size());
     }
 
     public static Object invokeMethod (String className, String methodName){
@@ -153,7 +144,7 @@ public class FrontController extends HttpServlet {
         }
         
         if (directories.isEmpty()) {
-            throw new Exception("The controller package is empty.");
+            throw new Exception("The controller package is empty or does not exists.");
         }
 
         ArrayList<Class<?>> classes = new ArrayList<>();
@@ -191,10 +182,10 @@ public class FrontController extends HttpServlet {
         this.setControllerList(classnames);
     }
 
-    private static List<Class<?>> findClasses(File directory, String packageName) throws ClassNotFoundException {
+    private static List<Class<?>> findClasses(File directory, String packageName) throws Exception {
         List<Class<?>> classes = new ArrayList<>();
         if (!directory.exists()) {
-            return classes;
+            throw new Exception("Directory :" + directory.getName() + " does not exist.");
         }
         File[] files = directory.listFiles();
         if (files == null) {
