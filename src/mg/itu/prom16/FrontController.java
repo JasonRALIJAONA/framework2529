@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -13,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import mg.itu.prom16.annotation.Controller;
 import mg.itu.prom16.annotation.JGet;
+import mg.itu.prom16.annotation.JRequestParam;
+import mg.itu.prom16.util.Function;
 import mg.itu.prom16.util.Mapping;
 import mg.itu.prom16.util.ModelView;
 import jakarta.servlet.ServletContext;
@@ -81,7 +84,31 @@ public class FrontController extends HttpServlet {
 
             Object result=null;
             try {
-                result=invokeMethod(mp.getClassName(), mp.getMethodName());
+                Method method=Function.findMethod(mp.getClassName(), mp.getMethodName());
+                if (method != null) {
+                    Parameter[] parameters=method.getParameters();
+                    Object[] args=new Object[parameters.length];
+
+                    for (int i = 0; i < parameters.length; i++) {
+                        Parameter parameter = parameters[i];
+                        if(!(parameter.isAnnotationPresent(JRequestParam.class))) {
+                            // get by the parameter name
+                            String value = req.getParameter(parameter.getName());
+                            System.out.println("Mba nandalo tato: " + value);
+                            System.out.println("Nom parametre: " + parameter.getName());
+                            args[i]=value;
+                        }else if(parameter.isAnnotationPresent(JRequestParam.class)) {
+                            JRequestParam jrp=parameter.getAnnotation(JRequestParam.class);
+                            String value=req.getParameter(jrp.value());
+                            args[i]=value;
+                        }
+                    }
+
+                    result=method.invoke(Class.forName(mp.getClassName()).getDeclaredConstructor().newInstance(), args);
+                    // print the type of result
+                    System.out.println("Result type: "+ result.getClass().getName());
+                }
+
             } catch (Exception e) {
                 throw new ServletException(e);
             }
@@ -112,19 +139,6 @@ public class FrontController extends HttpServlet {
         // out.println("number of classes"+ this.getControllerList().size());
     }
 
-    public static Object invokeMethod (String className, String methodName){
-        try {
-            Class<?> clazz = Class.forName(className);
-            Object instance = clazz.getDeclaredConstructor().newInstance();
-            Method method = clazz.getMethod(methodName);
-    
-            return method.invoke(instance);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
 
     public void getClasses() throws Exception{
 
