@@ -94,8 +94,6 @@ public class FrontController extends HttpServlet {
                         if(!(parameter.isAnnotationPresent(JRequestParam.class))) {
                             // get by the parameter name
                             String value = req.getParameter(parameter.getName());
-                            System.out.println("Mba nandalo tato: " + value);
-                            System.out.println("Nom parametre: " + parameter.getName());
                             args[i]=value;
                         }else if(parameter.isAnnotationPresent(JRequestParam.class)) {
                             JRequestParam jrp=parameter.getAnnotation(JRequestParam.class);
