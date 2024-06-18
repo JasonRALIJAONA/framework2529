@@ -23,6 +23,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.thoughtworks.paranamer.AdaptiveParanamer;
+import com.thoughtworks.paranamer.Paranamer;
 
 public class FrontController extends HttpServlet {
     ArrayList<String> controllerList;
@@ -86,14 +88,17 @@ public class FrontController extends HttpServlet {
             try {
                 Method method=Function.findMethod(mp.getClassName(), mp.getMethodName());
                 if (method != null) {
+                    Paranamer paranamer = new AdaptiveParanamer();
                     Parameter[] parameters=method.getParameters();
+                    String[] parameterNames=paranamer.lookupParameterNames(method);
+
                     Object[] args=new Object[parameters.length];
 
                     for (int i = 0; i < parameters.length; i++) {
                         Parameter parameter = parameters[i];
                         if(!(parameter.isAnnotationPresent(JRequestParam.class))) {
                             // get by the parameter name
-                            String value = req.getParameter(parameter.getName());
+                            String value = req.getParameter(parameterNames[i]);
                             args[i]=value;
                         }else if(parameter.isAnnotationPresent(JRequestParam.class)) {
                             JRequestParam jrp=parameter.getAnnotation(JRequestParam.class);
