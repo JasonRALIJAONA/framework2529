@@ -3,6 +3,7 @@ package mg.itu.prom16;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.net.URL;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import mg.itu.prom16.annotation.Controller;
 import mg.itu.prom16.annotation.JGet;
+import mg.itu.prom16.annotation.JRequestObject;
 import mg.itu.prom16.annotation.JRequestParam;
 import mg.itu.prom16.util.Function;
 import mg.itu.prom16.util.Mapping;
@@ -23,6 +25,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.thoughtworks.paranamer.AdaptiveParanamer;
+import com.thoughtworks.paranamer.Paranamer;
 
 public class FrontController extends HttpServlet {
     ArrayList<String> controllerList;
@@ -86,28 +90,51 @@ public class FrontController extends HttpServlet {
             try {
                 Method method=Function.findMethod(mp.getClassName(), mp.getMethodName());
                 if (method != null) {
+                    Paranamer paranamer = new AdaptiveParanamer();
                     Parameter[] parameters=method.getParameters();
+                    String[] parameterNames=paranamer.lookupParameterNames(method);
+
                     Object[] args=new Object[parameters.length];
 
                     for (int i = 0; i < parameters.length; i++) {
                         Parameter parameter = parameters[i];
-                        if(!(parameter.isAnnotationPresent(JRequestParam.class))) {
-                            // get by the parameter name
-                            String value = req.getParameter(parameter.getName());
-                            args[i]=value;
-                        }else if(parameter.isAnnotationPresent(JRequestParam.class)) {
-                            JRequestParam jrp=parameter.getAnnotation(JRequestParam.class);
-                            String value=req.getParameter(jrp.value());
-                            args[i]=value;
+                        if (parameter.getType().isPrimitive() || parameter.getType().equals(String.class)) {
+                            if(!(parameter.isAnnotationPresent(JRequestParam.class))) {
+                                // get by the parameter name
+                                String value = req.getParameter(parameterNames[i]);
+                                args[i]=value;
+                            }else if(parameter.isAnnotationPresent(JRequestParam.class)) {
+                                JRequestParam jrp=parameter.getAnnotation(JRequestParam.class);
+                                String value=req.getParameter(jrp.value());
+                                args[i]=value;
+                            }
+                        }else{
+                            String prefix="";
+                            if(!(parameter.isAnnotationPresent(JRequestObject.class))) {
+                               prefix=parameterNames[i];
+                            }else {
+                               prefix=parameter.getAnnotation(JRequestObject.class).value();
+                            }
+
+                            Object obj=parameter.getType().getDeclaredConstructor().newInstance();
+                            // get the attributes of the object
+                            Field[] fields=parameter.getType().getDeclaredFields();
+                            for (Field field : fields) {
+                                Method meth=parameter.getType().getMethod("set"+Function.capitalize(field.getName()), field.getType());
+                                String value=req.getParameter(prefix+"."+field.getName());
+                                Object convertedValue = Function.convertStringToType(value, field.getType());
+                                meth.invoke(obj, convertedValue);
+                            }
+
+                            args[i]=obj;
                         }
                     }
 
                     result=method.invoke(Class.forName(mp.getClassName()).getDeclaredConstructor().newInstance(), args);
-                    // print the type of result
-                    System.out.println("Result type: "+ result.getClass().getName());
                 }
 
             } catch (Exception e) {
+                e.printStackTrace();
                 throw new ServletException(e);
             }
 

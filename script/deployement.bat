@@ -3,7 +3,8 @@
 set SRC_DIR=D:/JASON/programmes/JSP/sprint/framework2529/src
 set TEMP_SRC=D:/JASON/programmes/JSP/sprint/framework2529/temp-src
 set BIN_DIR=D:/JASON/programmes/JSP/sprint/framework2529/bin
-set LIB_DIR=C:/Program Files/Apache Software Foundation/Tomcat 10.1/lib/servlet-api.jar
+set LIB_DIR2=C:/Program Files/Apache Software Foundation/Tomcat 10.1/lib/servlet-api.jar
+set LIB_DIR=D:/JASON/programmes/JSP/sprint/framework2529/lib
 set WORK_DIR=D:/JASON/programmes/JSP/sprint/framework2529
 set TEST_DIR=D:/JASON/programmes/JSP/sprint/test
 
@@ -14,7 +15,7 @@ FOR /R "%SRC_DIR%" %%F IN (*.java) DO (
 )
 
 cd "%TEMP_SRC%"
-javac -sourcepath "%TEMP_SRC%" -d "%BIN_DIR%" -cp "%LIB_DIR%" *.java
+javac -sourcepath "%TEMP_SRC%" -d "%BIN_DIR%" -cp "%LIB_DIR2%;%LIB_DIR%/paranamer-2.8.jar" *.java
 
 cd "%BIN_DIR%"
 jar -cvf "%WORK_DIR%/framework2529.jar" -C "%BIN_DIR%" .
