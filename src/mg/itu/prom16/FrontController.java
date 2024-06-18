@@ -130,11 +130,10 @@ public class FrontController extends HttpServlet {
                     }
 
                     result=method.invoke(Class.forName(mp.getClassName()).getDeclaredConstructor().newInstance(), args);
-                    // print the type of result
-                    System.out.println("Result type: "+ result.getClass().getName());
                 }
 
             } catch (Exception e) {
+                e.printStackTrace();
                 throw new ServletException(e);
             }
 
