@@ -98,7 +98,7 @@ public class FrontController extends HttpServlet {
 
                     for (int i = 0; i < parameters.length; i++) {
                         Parameter parameter = parameters[i];
-                        if (parameter.getType().isPrimitive()) {
+                        if (parameter.getType().isPrimitive() || parameter.getType().equals(String.class)) {
                             if(!(parameter.isAnnotationPresent(JRequestParam.class))) {
                                 // get by the parameter name
                                 String value = req.getParameter(parameterNames[i]);
@@ -120,9 +120,10 @@ public class FrontController extends HttpServlet {
                             // get the attributes of the object
                             Field[] fields=parameter.getType().getDeclaredFields();
                             for (Field field : fields) {
-                                String value=req.getParameter(prefix+"."+field.getName());
                                 Method meth=parameter.getType().getMethod("set"+Function.capitalize(field.getName()), field.getType());
-                                meth.invoke(obj, value);
+                                String value=req.getParameter(prefix+"."+field.getName());
+                                Object convertedValue = Function.convertStringToType(value, field.getType());
+                                meth.invoke(obj, convertedValue);
                             }
 
                             args[i]=obj;
