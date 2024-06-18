@@ -31,4 +31,11 @@ public class Function {
 
         return null;
     }
+
+    public static String capitalize (String word){
+        String first=word.substring(0,1);
+        String others=word.substring(1);
+        String result=first.toUpperCase()+others;
+        return result;
+    }
 }
