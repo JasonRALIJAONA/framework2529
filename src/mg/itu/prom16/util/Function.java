@@ -1,6 +1,11 @@
 package mg.itu.prom16.util;
 
 import java.lang.reflect.Method;
+import java.util.Collections;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 public class Function {
     public static Object invokeMethod(String className, String methodName) {
         try {
@@ -59,5 +64,23 @@ public class Function {
         } else {
             return value;
         }
+    }
+
+    public static JSession HttpToJSession(HttpServletRequest request){
+        HttpSession session=request.getSession();
+        JSession jSession=new JSession();
+        
+        Collections.list(session.getAttributeNames()).forEach(key -> {
+            jSession.add(key, session.getAttribute(key));
+        });
+
+        return jSession;
+    }
+
+    public static void JSessionToHttp(JSession jSession, HttpServletRequest request){
+        HttpSession session=request.getSession();
+        jSession.values.forEach((key,value) -> {
+            session.setAttribute(key, value);
+        });
     }
 }

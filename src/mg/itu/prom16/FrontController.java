@@ -18,6 +18,7 @@ import mg.itu.prom16.annotation.JGet;
 import mg.itu.prom16.annotation.JRequestObject;
 import mg.itu.prom16.annotation.JRequestParam;
 import mg.itu.prom16.util.Function;
+import mg.itu.prom16.util.JSession;
 import mg.itu.prom16.util.Mapping;
 import mg.itu.prom16.util.ModelView;
 import jakarta.servlet.ServletContext;
@@ -112,6 +113,8 @@ public class FrontController extends HttpServlet {
                                 Object convertedValue = Function.convertStringToType(value, parameter.getType());
                                 args[i]=convertedValue;
                             }
+                        }else if(parameter.getType().equals(JSession.class)){
+                            args[i]=Function.HttpToJSession(req);
                         }else{
                             String prefix="";
                             if(!(parameter.isAnnotationPresent(JRequestObject.class))) {
@@ -139,6 +142,13 @@ public class FrontController extends HttpServlet {
                     }
 
                     result=method.invoke(Class.forName(mp.getClassName()).getDeclaredConstructor().newInstance(), args);
+
+                    // return to httpsession
+                    for (Object obj: args){
+                        if (obj instanceof JSession) {
+                            Function.JSessionToHttp((JSession)obj, req);
+                        }
+                    }
                 }
 
             } catch (Exception e) {
