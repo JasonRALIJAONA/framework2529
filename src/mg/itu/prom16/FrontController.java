@@ -100,20 +100,28 @@ public class FrontController extends HttpServlet {
                         Parameter parameter = parameters[i];
                         if (parameter.getType().isPrimitive() || parameter.getType().equals(String.class)) {
                             if(!(parameter.isAnnotationPresent(JRequestParam.class))) {
-                                // get by the parameter name
-                                String value = req.getParameter(parameterNames[i]);
-                                args[i]=value;
+                                throw new ServletException("ETU002529 : le parametre:\"" +parameterNames[i]+"\" n'est pas annotee");
                             }else if(parameter.isAnnotationPresent(JRequestParam.class)) {
                                 JRequestParam jrp=parameter.getAnnotation(JRequestParam.class);
-                                String value=req.getParameter(jrp.value());
-                                args[i]=value;
+                                String value="";
+                                if (jrp.value().isEmpty()) {
+                                    value=req.getParameter(parameterNames[i]);
+                                }else{
+                                    value=req.getParameter(jrp.value());
+                                }
+                                Object convertedValue = Function.convertStringToType(value, parameter.getType());
+                                args[i]=convertedValue;
                             }
                         }else{
                             String prefix="";
                             if(!(parameter.isAnnotationPresent(JRequestObject.class))) {
-                               prefix=parameterNames[i];
+                                throw new ServletException("ETU002529 : le parametre:\"" +parameterNames[i]+"\" n'est pas annotee");
                             }else {
-                               prefix=parameter.getAnnotation(JRequestObject.class).value();
+                                if (parameter.getAnnotation(JRequestObject.class).value().isEmpty()) {
+                                    prefix=parameterNames[i];
+                                }else{
+                                    prefix=parameter.getAnnotation(JRequestObject.class).value();
+                                }
                             }
 
                             Object obj=parameter.getType().getDeclaredConstructor().newInstance();
