@@ -78,9 +78,16 @@ public class Function {
     }
 
     public static void JSessionToHttp(JSession jSession, HttpServletRequest request){
-        HttpSession session=request.getSession();
-        jSession.values.forEach((key,value) -> {
+        HttpSession session = request.getSession();
+        jSession.values.forEach((key, value) -> {
             session.setAttribute(key, value);
+        });
+        
+        // Remove any attributes that are not present in jSession
+        Collections.list(session.getAttributeNames()).forEach(key -> {
+            if (!jSession.values.containsKey(key)) {
+                session.removeAttribute(key);
+            }
         });
     }
 }
