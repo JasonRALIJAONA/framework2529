@@ -17,6 +17,7 @@ import mg.itu.prom16.annotation.Controller;
 import mg.itu.prom16.annotation.JGet;
 import mg.itu.prom16.annotation.JRequestObject;
 import mg.itu.prom16.annotation.JRequestParam;
+import mg.itu.prom16.util.AttriibuteSession;
 import mg.itu.prom16.util.Function;
 import mg.itu.prom16.util.JSession;
 import mg.itu.prom16.util.Mapping;
@@ -141,7 +142,17 @@ public class FrontController extends HttpServlet {
                         }
                     }
 
-                    result=method.invoke(Class.forName(mp.getClassName()).getDeclaredConstructor().newInstance(), args);
+                    // if the session is a AttributeSession
+                    Object control=Class.forName(mp.getClassName()).getDeclaredConstructor().newInstance();
+                    Field[] fields=control.getClass().getDeclaredFields();
+                    for (Field field : fields) {
+                        if (field.getType().equals(AttriibuteSession.class)) {
+                            field.setAccessible(true);
+                            field.set(control, new AttriibuteSession(req));
+                        }
+                    }
+                    
+                    result=method.invoke(control, args);
 
                     // return to httpsession
                     for (Object obj: args){
