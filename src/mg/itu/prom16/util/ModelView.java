@@ -2,6 +2,8 @@ package mg.itu.prom16.util;
 
 import java.util.HashMap;
 
+import com.google.gson.Gson;
+
 public class ModelView {
     String url;
     HashMap<String, Object> data = new HashMap<>();
@@ -30,6 +32,11 @@ public class ModelView {
 
     public void addObject (String key , Object obj){
         this.getData().put(key, obj);
+    }
+
+    public String getDataAsJson() {
+        Gson gson = new Gson();
+        return gson.toJson(this.data);
     }
 
 }
