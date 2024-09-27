@@ -27,6 +27,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.google.gson.Gson;
 import com.thoughtworks.paranamer.AdaptiveParanamer;
 import com.thoughtworks.paranamer.Paranamer;
 
@@ -162,11 +163,11 @@ public class FrontController extends HttpServlet {
                 res.setContentType("application/json");
 
                 if (result instanceof String) {
-                    out.println("Controller: "+ mp.getClassName());
-                    out.println("Method: "+ mp.getMethodName());
-                    out.println("Result: "+ result);
+                    Gson gson = new Gson();
+                    String json = gson.toJson(result);
+
+                    out.println(json);
                 }else if (result instanceof ModelView){
-                    String url= ((ModelView)result).getUrl();
                     String json= ((ModelView)result).getDataAsJson();
 
                     out.println(json);                    
