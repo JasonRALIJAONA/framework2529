@@ -17,6 +17,7 @@ import mg.itu.prom16.annotation.Controller;
 import mg.itu.prom16.annotation.JGet;
 import mg.itu.prom16.annotation.JRequestObject;
 import mg.itu.prom16.annotation.JRequestParam;
+import mg.itu.prom16.annotation.Restapi;
 import mg.itu.prom16.util.Function;
 import mg.itu.prom16.util.JSession;
 import mg.itu.prom16.util.Mapping;
@@ -26,6 +27,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.google.gson.Gson;
 import com.thoughtworks.paranamer.AdaptiveParanamer;
 import com.thoughtworks.paranamer.Paranamer;
 
@@ -88,8 +90,10 @@ public class FrontController extends HttpServlet {
             Mapping mp= getMap().get(path);
 
             Object result=null;
+            boolean estRestApi=false;
             try {
                 Method method=Function.findMethod(mp.getClassName(), mp.getMethodName());
+                estRestApi = method.isAnnotationPresent(Restapi.class);
                 if (method != null) {
                     Paranamer paranamer = new AdaptiveParanamer();
                     Parameter[] parameters=method.getParameters();
@@ -155,24 +159,41 @@ public class FrontController extends HttpServlet {
                 e.printStackTrace();
                 throw new ServletException(e);
             }
+            if (estRestApi) {
+                res.setContentType("application/json");
 
-            if (result instanceof String) {
-                out.println("Controller: "+ mp.getClassName());
-                out.println("Method: "+ mp.getMethodName());
-                out.println("Result: "+ result);
-            }else if (result instanceof ModelView){
-                String url= ((ModelView)result).getUrl();
-                
-                HashMap<String , Object> data= ((ModelView)result).getData();
-                
-                for (String key : data.keySet()) {
-                    Object value = data.get(key);
-                    req.setAttribute(key, value);
+                if (result instanceof String) {
+                    Gson gson = new Gson();
+                    String json = gson.toJson(result);
+
+                    out.println(json);
+                }else if (result instanceof ModelView){
+                    String json= ((ModelView)result).getDataAsJson();
+
+                    out.println(json);                    
+                }else{
+                    throw new ServletException("Invalid return type.");
                 }
-
-                req.getRequestDispatcher(url).forward(req, res);    
+                
             }else{
-                throw new ServletException("Invalid return type.");
+                if (result instanceof String) {
+                    out.println("Controller: "+ mp.getClassName());
+                    out.println("Method: "+ mp.getMethodName());
+                    out.println("Result: "+ result);
+                }else if (result instanceof ModelView){
+                    String url= ((ModelView)result).getUrl();
+                    
+                    HashMap<String , Object> data= ((ModelView)result).getData();
+                    
+                    for (String key : data.keySet()) {
+                        Object value = data.get(key);
+                        req.setAttribute(key, value);
+                    }
+    
+                    req.getRequestDispatcher(url).forward(req, res);    
+                }else{
+                    throw new ServletException("Invalid return type.");
+                }
             }
         }else{
             // do a 404 error
