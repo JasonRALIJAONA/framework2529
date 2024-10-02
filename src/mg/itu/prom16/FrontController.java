@@ -14,10 +14,11 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import mg.itu.prom16.annotation.Controller;
-import mg.itu.prom16.annotation.JGet;
+import mg.itu.prom16.annotation.JPost;
 import mg.itu.prom16.annotation.JRequestObject;
 import mg.itu.prom16.annotation.JRequestParam;
 import mg.itu.prom16.annotation.Restapi;
+import mg.itu.prom16.annotation.Url;
 import mg.itu.prom16.util.Function;
 import mg.itu.prom16.util.JSession;
 import mg.itu.prom16.util.Mapping;
@@ -34,6 +35,7 @@ import com.thoughtworks.paranamer.Paranamer;
 public class FrontController extends HttpServlet {
     ArrayList<String> controllerList;
     HashMap <String , Mapping> map = new HashMap<>();
+
     public HashMap<String , Mapping>  getMap (){
         return this.map;
     }
@@ -93,6 +95,11 @@ public class FrontController extends HttpServlet {
             boolean estRestApi=false;
             try {
                 Method method=Function.findMethod(mp.getClassName(), mp.getMethodName());
+
+                if (mp.getVerb().compareToIgnoreCase(req.getMethod()) != 0) {
+                    throw new ServletException("ETU002529 : Verbe Incoherents");
+                }
+
                 estRestApi = method.isAnnotationPresent(Restapi.class);
                 if (method != null) {
                     Paranamer paranamer = new AdaptiveParanamer();
@@ -241,14 +248,20 @@ public class FrontController extends HttpServlet {
                 Method[] methods=clazz.getDeclaredMethods();
 
                 for (Method method : methods) {
-                    if (method.isAnnotationPresent(JGet.class)) {
-                        JGet jget=method.getAnnotation(JGet.class);
-                        if (jget.value().isEmpty() == false) {
-                            Mapping mapping=new Mapping(clazz.getName(), method.getName());
-                            if (this.getMap().containsKey(jget.value())) {
-                                throw new Exception("The URL \""+ jget.value() +"\" is already used.");
+                    if (method.isAnnotationPresent(Url.class)) {
+
+                        String verb = "GET";
+                        if (method.isAnnotationPresent(JPost.class)) {
+                            verb = "POST";
+                        }
+
+                        Url url = method.getAnnotation(Url.class);
+                        if (url.value().isEmpty() == false) {
+                            Mapping mapping=new Mapping(clazz.getName(), method.getName() , verb);
+                            if (this.getMap().containsKey(url.value())) {
+                                throw new Exception("The URL \""+ url.value() +"\" is already used.");
                             }else{
-                                this.getMap().put(jget.value(), mapping);
+                                this.getMap().put(url.value(), mapping);
                             }
                         }
                     }
