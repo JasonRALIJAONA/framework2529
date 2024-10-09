@@ -23,6 +23,7 @@ import mg.itu.prom16.util.Function;
 import mg.itu.prom16.util.JSession;
 import mg.itu.prom16.util.Mapping;
 import mg.itu.prom16.util.ModelView;
+import mg.itu.prom16.util.VerbMethod;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -94,10 +95,12 @@ public class FrontController extends HttpServlet {
             Object result=null;
             boolean estRestApi=false;
             try {
-                Method method=Function.findMethod(mp.getClassName(), mp.getMethodName());
+                VerbMethod single =  mp.getSingleVerbMethod(req.getMethod());
 
-                if (mp.getVerb().compareToIgnoreCase(req.getMethod()) != 0) {
-                    throw new ServletException("ETU002529 : Verbe Incoherents");
+                Method method=Function.findMethod(mp.getClassName(), single);
+
+                if (method == null) {
+                    throw new ServletException("ETU002529 : La methode "+single.getMethodName()+" avec le verbe "+req.getMethod()+" n'existe pas");
                 }
 
                 estRestApi = method.isAnnotationPresent(Restapi.class);
@@ -185,7 +188,7 @@ public class FrontController extends HttpServlet {
             }else{
                 if (result instanceof String) {
                     out.println("Controller: "+ mp.getClassName());
-                    out.println("Method: "+ mp.getMethodName());
+                    out.println("Method: "+ mp.getVerbMethods().get(0).getMethodName());
                     out.println("Result: "+ result);
                 }else if (result instanceof ModelView){
                     String url= ((ModelView)result).getUrl();
@@ -257,9 +260,15 @@ public class FrontController extends HttpServlet {
 
                         Url url = method.getAnnotation(Url.class);
                         if (url.value().isEmpty() == false) {
-                            Mapping mapping=new Mapping(clazz.getName(), method.getName() , verb);
+                            VerbMethod vm = new VerbMethod(verb , method.getName());
+                            Mapping mapping=new Mapping(clazz.getName(),vm);
                             if (this.getMap().containsKey(url.value())) {
-                                throw new Exception("The URL \""+ url.value() +"\" is already used.");
+                                Mapping temp =this.getMap().get(url.value());
+                                if (temp.hasVerbMethod(vm) == false) {
+                                    temp.addVerbMethod(vm);
+                                }else{
+                                    throw new Exception("The URL \""+ url.value() +"\" is already used with the verb '"+verb+"'");
+                                }
                             }else{
                                 this.getMap().put(url.value(), mapping);
                             }

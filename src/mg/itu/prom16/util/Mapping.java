@@ -1,17 +1,10 @@
 package mg.itu.prom16.util;
 
+import java.util.ArrayList;
+
 public class Mapping {
     String className;
-    String MethodName;
-    String verb = "GET";
-
-    public String getVerb() {
-        return this.verb;
-    }
-
-    public void setVerb(String verb) {
-        this.verb = verb;
-    }
+    ArrayList<VerbMethod> verbMethods = new ArrayList<>();
 
     public String getClassName() {
         return this.className;
@@ -21,19 +14,43 @@ public class Mapping {
         this.className = className;
     }
 
-    public String getMethodName() {
-        return this.MethodName;
+    public ArrayList<VerbMethod> getVerbMethods() {
+        return this.verbMethods;
     }
 
-    public void setMethodName(String MethodName) {
-        this.MethodName = MethodName;
+    public void setVerbMethods(ArrayList<VerbMethod> verbMethods) {
+        this.verbMethods = verbMethods;
     }
 
-    public Mapping(){}
+    public void addVerbMethod (VerbMethod vm){
+        getVerbMethods().add(vm);
+    }
 
-    public Mapping(String className , String MethodName , String verb){
-        setClassName(className);
-        setMethodName(MethodName);
-        setVerb(verb);
+
+    public Mapping () {};
+
+    public Mapping (String classname , VerbMethod vm){
+        setClassName(classname);
+        getVerbMethods().add(vm);
+    }
+
+    public boolean hasVerbMethod (VerbMethod vm){
+        for (VerbMethod verbMethod : getVerbMethods()) {
+            if (vm.getMethodName().compareTo(verbMethod.getMethodName()) == 0 && vm.getVerb().compareTo(verbMethod.getVerb())==0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public VerbMethod getSingleVerbMethod (String verb){
+        for (VerbMethod verbMethod : verbMethods) {
+            if (verbMethod.getVerb().compareToIgnoreCase(verb) == 0) {
+                return verbMethod;
+            }
+        }
+
+        return null;
     }
 }
