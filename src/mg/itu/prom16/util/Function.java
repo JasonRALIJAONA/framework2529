@@ -21,12 +21,12 @@ public class Function {
         return null;
     }
 
-    public static Method findMethod(String className, String methodName) {
+    public static Method findMethod(String className, VerbMethod vm) {
         try {
             Class<?> clazz = Class.forName(className);
             Method[] methods = clazz.getMethods();
             for (Method method : methods) {
-                if (method.getName().equals(methodName)) {
+                if (method.getName().equals(vm.getMethodName())) {
                     return method;
                 }
             }
