@@ -206,8 +206,12 @@ public class FrontController extends HttpServlet {
                 }
             }
         }else{
-            // do a 404 error
-            res.sendError(HttpServletResponse.SC_NOT_FOUND);
+            res.setStatus(HttpServletResponse.SC_NOT_FOUND);
+    
+            // Write a custom message to the response body
+            res.setContentType("text/plain");
+            out.println("404 tsy hita : Tsy hita anaty serveur ny rohy nangatahinao");
+            out.flush();
         }
         
         // out.println("number of classes"+ this.getControllerList().size());
