@@ -8,6 +8,12 @@ set LIB_DIR=D:/JASON/programmes/JSP/sprint/framework2529/lib
 set WORK_DIR=D:/JASON/programmes/JSP/sprint/framework2529
 set TEST_DIR=D:/JASON/programmes/JSP/sprint/test
 
+@REM Suppression des anciens fichiers
+del /Q "%TEMP_SRC%"
+del /Q "%BIN_DIR%"
+
+@REM Création des répertoires
+mkdir "%BIN_DIR%"
 mkdir "%TEMP_SRC%"
 
 FOR /R "%SRC_DIR%" %%F IN (*.java) DO (
