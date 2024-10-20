@@ -15,17 +15,20 @@ import java.util.HashMap;
 import java.util.List;
 import mg.itu.prom16.annotation.Controller;
 import mg.itu.prom16.annotation.JPost;
+import mg.itu.prom16.annotation.JRequestFile;
 import mg.itu.prom16.annotation.JRequestObject;
 import mg.itu.prom16.annotation.JRequestParam;
 import mg.itu.prom16.annotation.Restapi;
 import mg.itu.prom16.annotation.Url;
 import mg.itu.prom16.util.Function;
+import mg.itu.prom16.util.JFile;
 import mg.itu.prom16.util.JSession;
 import mg.itu.prom16.util.Mapping;
 import mg.itu.prom16.util.ModelView;
 import mg.itu.prom16.util.VerbMethod;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,6 +36,7 @@ import com.google.gson.Gson;
 import com.thoughtworks.paranamer.AdaptiveParanamer;
 import com.thoughtworks.paranamer.Paranamer;
 
+@MultipartConfig
 public class FrontController extends HttpServlet {
     ArrayList<String> controllerList;
     HashMap <String , Mapping> map = new HashMap<>();
@@ -129,6 +133,22 @@ public class FrontController extends HttpServlet {
                             }
                         }else if(parameter.getType().equals(JSession.class)){
                             args[i]=Function.HttpToJSession(req);
+                        }else if (parameter.getType().equals(JFile.class)) {
+                            if (!(parameter.isAnnotationPresent(JRequestFile.class))) {
+                                throw new ServletException("ETU002529 : le parametre:\"" +parameterNames[i]+"\" n'est pas annotee");    
+                            }else{
+                                JRequestFile jrf=parameter.getAnnotation(JRequestFile.class);
+                                JFile jf=new JFile();
+                                String name="";
+                                if (jrf.value().isEmpty()) {
+                                    name=parameterNames[i];
+                                }else{
+                                    name=jrf.value();
+                                }
+                                jf.setFilename(req.getPart(name).getSubmittedFileName());
+                                jf.setFilecontent(req.getPart(name).getInputStream());
+                                args[i]=jf;
+                            }
                         }else{
                             String prefix="";
                             if(!(parameter.isAnnotationPresent(JRequestObject.class))) {
@@ -268,6 +288,12 @@ public class FrontController extends HttpServlet {
                             Mapping mapping=new Mapping(clazz.getName(),vm);
                             if (this.getMap().containsKey(url.value())) {
                                 Mapping temp =this.getMap().get(url.value());
+
+                                // throw exception if the url is in another class
+                                if (temp.getClassName().equals(clazz.getName()) == false) {
+                                    throw new Exception("The URL \""+ url.value() +"\" is used in more than one class : "+ clazz.getName() + " and "+ temp.getClassName());
+                                }
+
                                 if (temp.hasVerbMethod(vm) == false) {
                                     temp.addVerbMethod(vm);
                                 }else{
