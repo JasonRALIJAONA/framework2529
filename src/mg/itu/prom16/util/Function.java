@@ -1,10 +1,13 @@
 package mg.itu.prom16.util;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collections;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import mg.itu.prom16.annotation.field.Number;
+import mg.itu.prom16.annotation.field.Range;
 
 public class Function {
     public static Object invokeMethod(String className, String methodName) {
@@ -89,5 +92,26 @@ public class Function {
                 session.removeAttribute(key);
             }
         });
+    }
+
+    public static void checkField(Field field , Object obj)throws Exception{
+        if(field.isAnnotationPresent(Number.class)){
+           double value=((java.lang.Number)obj).doubleValue();
+            System.out.println("premier test");
+            if (field.isAnnotationPresent(Range.class)) {
+                System.out.println("deuxieme test");
+                Range range = field.getAnnotation(Range.class);
+                if (value < range.min()) {
+                    throw new Exception("La valeur est en dessous du minimum qui est : "+range.min());
+                }
+                if (value > range.max()) {
+                    throw new Exception("La valeur est au dessus du maximum qui est : "+range.max());
+                }
+            }
+        }
+
+        if (field.isAnnotationPresent(Range.class) && !field.isAnnotationPresent(Number.class)) {
+            throw new Exception("La valeur doit être un nombre pour pouvoir utiliser l'annotation Range");
+        }
     }
 }

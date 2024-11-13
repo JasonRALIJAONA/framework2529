@@ -168,6 +168,7 @@ public class FrontController extends HttpServlet {
                                 Method meth=parameter.getType().getMethod("set"+Function.capitalize(field.getName()), field.getType());
                                 String value=req.getParameter(prefix+"."+field.getName());
                                 Object convertedValue = Function.convertStringToType(value, field.getType());
+                                Function.checkField(field, convertedValue);
                                 meth.invoke(obj, convertedValue);
                             }
 
