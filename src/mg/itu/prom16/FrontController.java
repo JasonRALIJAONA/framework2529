@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+
+import mg.itu.prom16.Exception.ValidationException;
 import mg.itu.prom16.annotation.Controller;
 import mg.itu.prom16.annotation.JPost;
 import mg.itu.prom16.annotation.JRequestFile;
@@ -79,7 +81,7 @@ public class FrontController extends HttpServlet {
 
     public void processRequest (HttpServletRequest req , HttpServletResponse res)throws ServletException, IOException{
         PrintWriter out = res.getWriter();
-
+        HashMap <String , List<String>> errors = new HashMap<>();
         String message = req.getRequestURL().toString();
         int lastINdex=message.lastIndexOf("/");
 
@@ -98,13 +100,20 @@ public class FrontController extends HttpServlet {
 
             Object result=null;
             boolean estRestApi=false;
+            String requestMethod = req.getMethod();
+            if (req.getAttribute("errors") != null) {
+                requestMethod="GET";
+            }
+
             try {
-                VerbMethod single =  mp.getSingleVerbMethod(req.getMethod());
+                System.out.println(req.getAttribute("message"));
+                VerbMethod single =  mp.getSingleVerbMethod(requestMethod);
 
                 Method method=Function.findMethod(mp.getClassName(), single);
 
                 if (method == null) {
-                    throw new ServletException("ETU002529 : La methode "+single.getMethodName()+" avec le verbe "+req.getMethod()+" n'existe pas");
+                    String methode = mp.getVerbMethods().get(0).getMethodName();
+                    throw new ServletException("ETU002529 : La methode "+methode+" avec le verbe "+requestMethod+" n'existe pas");
                 }
 
                 estRestApi = method.isAnnotationPresent(Restapi.class);
@@ -166,9 +175,14 @@ public class FrontController extends HttpServlet {
                             Field[] fields=parameter.getType().getDeclaredFields();
                             for (Field field : fields) {
                                 Method meth=parameter.getType().getMethod("set"+Function.capitalize(field.getName()), field.getType());
-                                String value=req.getParameter(prefix+"."+field.getName());
+                                String name = prefix+"."+field.getName();
+                                String value=req.getParameter(name);
                                 Object convertedValue = Function.convertStringToType(value, field.getType());
-                                Function.checkField(field, convertedValue);
+                                try {
+                                    Function.checkField(field, convertedValue);
+                                } catch (ValidationException e) {
+                                    errors.put(name,e.getErrors());
+                                }
                                 meth.invoke(obj, convertedValue);
                             }
 
@@ -212,6 +226,16 @@ public class FrontController extends HttpServlet {
                     out.println("Method: "+ mp.getVerbMethods().get(0).getMethodName());
                     out.println("Result: "+ result);
                 }else if (result instanceof ModelView){
+                    if (errors.isEmpty() == false) {
+                        // get the previous url
+                        String url = (String)((ModelView)result).getData().get("errorRedirect");
+  
+                        req.setAttribute("errors", errors);
+                        populateRequest(req);
+
+                        req.getRequestDispatcher(url).forward(req, res);  
+                    }
+
                     String url= ((ModelView)result).getUrl();
                     
                     HashMap<String , Object> data= ((ModelView)result).getData();
@@ -330,5 +354,18 @@ public class FrontController extends HttpServlet {
             }
         }
         return classes;
+    }
+
+    
+    public void populateRequest (HttpServletRequest request){
+        Enumeration<String> parameterNamesEnum = request.getParameterNames();
+        List<String> parameterNames = new ArrayList<>();
+        while (parameterNamesEnum.hasMoreElements()) {
+            parameterNames.add(parameterNamesEnum.nextElement());
+        }
+        for (String name : parameterNames) {
+            String value = request.getParameter(name);
+            request.setAttribute(name, value);
+        }
     }
 }
