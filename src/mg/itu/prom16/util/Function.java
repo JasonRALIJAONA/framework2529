@@ -6,6 +6,7 @@ import java.util.Collections;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import mg.itu.prom16.Exception.ValidationException;
 import mg.itu.prom16.annotation.field.Number;
 import mg.itu.prom16.annotation.field.Range;
 
@@ -95,23 +96,26 @@ public class Function {
     }
 
     public static void checkField(Field field , Object obj)throws Exception{
+        ValidationException validationException = new ValidationException();
         if(field.isAnnotationPresent(Number.class)){
            double value=((java.lang.Number)obj).doubleValue();
-            System.out.println("premier test");
             if (field.isAnnotationPresent(Range.class)) {
-                System.out.println("deuxieme test");
                 Range range = field.getAnnotation(Range.class);
                 if (value < range.min()) {
-                    throw new Exception("La valeur est en dessous du minimum qui est : "+range.min());
+                    validationException.addError("La valeur est en dessous du minimum qui est : "+range.min());
                 }
                 if (value > range.max()) {
-                    throw new Exception("La valeur est au dessus du maximum qui est : "+range.max());
+                    validationException.addError("La valeur est au dessus du maximum qui est : "+range.max());
                 }
             }
         }
 
         if (field.isAnnotationPresent(Range.class) && !field.isAnnotationPresent(Number.class)) {
-            throw new Exception("La valeur doit être un nombre pour pouvoir utiliser l'annotation Range");
+            validationException.addError("L'annotation Range ne peut être utilisée que quand l'annotation Number est utilisée");
+        }
+
+        if (!validationException.getErrors().isEmpty()) {
+            throw validationException;
         }
     }
 }
