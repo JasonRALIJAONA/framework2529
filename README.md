@@ -11,3 +11,7 @@ SRPINT 1
 
 3- Annotez par @Controller vos controller
 4- Annotez par @Jget les methodes : (exemple @JGet(path))
+
+
+AUTHORIZATION:
+mettre "auth" dans Jsession avec le niveau d'authorization de la methode
