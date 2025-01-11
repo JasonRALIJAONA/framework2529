@@ -41,14 +41,23 @@ import com.thoughtworks.paranamer.Paranamer;
 @MultipartConfig
 public class FrontController extends HttpServlet {
     ArrayList<String> controllerList;
-    HashMap <String , Mapping> map = new HashMap<>();
+    HashMap<String, Mapping> map = new HashMap<>();
+    String authName;
 
-    public HashMap<String , Mapping>  getMap (){
+    public String getAuthName() {
+        return this.authName;
+    }
+
+    public void setAuthName(String authName) {
+        this.authName = authName;
+    }
+
+    public HashMap<String, Mapping> getMap() {
         return this.map;
     }
 
-    public void setMap(HashMap<String , Mapping> mp){
-        this.map=mp;
+    public void setMap(HashMap<String, Mapping> mp) {
+        this.map = mp;
     }
 
     public ArrayList<String> getControllerList() {
@@ -60,13 +69,13 @@ public class FrontController extends HttpServlet {
     }
 
     @Override
-    public void doGet (HttpServletRequest req , HttpServletResponse res) throws ServletException, IOException {
-        processRequest(req , res);
+    public void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        processRequest(req, res);
     }
 
     @Override
-    public void doPost (HttpServletRequest req , HttpServletResponse res) throws ServletException, IOException {
-        processRequest(req , res);
+    public void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        processRequest(req, res);
     }
 
     @Override
@@ -79,123 +88,141 @@ public class FrontController extends HttpServlet {
         }
     }
 
-    public void processRequest (HttpServletRequest req , HttpServletResponse res)throws ServletException, IOException{
+    public void processRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         PrintWriter out = res.getWriter();
-        HashMap <String , List<String>> errors = new HashMap<>();
+        HashMap<String, List<String>> errors = new HashMap<>();
         String message = req.getRequestURL().toString();
-        int lastINdex=message.lastIndexOf("/");
+        int lastINdex = message.lastIndexOf("/");
 
-        String path="";
+        String path = "";
 
         if (lastINdex != -1) {
-            path=message.substring(lastINdex + 1);
+            path = message.substring(lastINdex + 1);
         }
 
         // for (String str : this.getControllerList()){
-        //     out.println("<p>"+ str +"</p>");
+        // out.println("<p>"+ str +"</p>");
         // }
-         
-        if (getMap().containsKey(path)) {
-            Mapping mp= getMap().get(path);
 
-            Object result=null;
-            boolean estRestApi=false;
+        if (getMap().containsKey(path)) {
+            Mapping mp = getMap().get(path);
+
+            Object result = null;
+            boolean estRestApi = false;
             String requestMethod = req.getMethod();
             if (req.getAttribute("errors") != null) {
-                requestMethod="GET";
+                requestMethod = "GET";
             }
 
             try {
-                System.out.println(req.getAttribute("message"));
-                VerbMethod single =  mp.getSingleVerbMethod(requestMethod);
+                VerbMethod single = mp.getSingleVerbMethod(requestMethod);
 
-                Method method=Function.findMethod(mp.getClassName(), single);
+                Method method = Function.findMethod(mp.getClassName(), single);
 
                 if (method == null) {
                     String methode = mp.getVerbMethods().get(0).getMethodName();
-                    throw new ServletException("ETU002529 : La methode "+methode+" avec le verbe "+requestMethod+" n'existe pas");
+                    throw new ServletException(
+                            "ETU002529 : La methode " + methode + " avec le verbe " + requestMethod + " n'existe pas");
                 }
 
                 estRestApi = method.isAnnotationPresent(Restapi.class);
                 if (method != null) {
-                    Paranamer paranamer = new AdaptiveParanamer();
-                    Parameter[] parameters=method.getParameters();
-                    String[] parameterNames=paranamer.lookupParameterNames(method);
+                    // sprint 15 authentification
+                    if (method.isAnnotationPresent(mg.itu.prom16.annotation.Authorization.class)) {
+                        mg.itu.prom16.annotation.Authorization auth = method.getAnnotation(mg.itu.prom16.annotation.Authorization.class);
+                        JSession sess = Function.HttpToJSession(req);
+                        if (sess == null) {
+                            throw new ServletException("ETU002529 : Vous n'etes pas connecte");
+                        }
+                        if ((int) sess.get(getAuthName()) < auth.level()) {
+                            System.out.println("niveau de l'utilisateur : " + sess.get(getAuthName()));
+                            throw new ServletException("ETU002529 : Vous n'avez pas le droit d'acces a cette page");
+                        }
+                    }
 
-                    Object[] args=new Object[parameters.length];
+                    Paranamer paranamer = new AdaptiveParanamer();
+                    Parameter[] parameters = method.getParameters();
+                    String[] parameterNames = paranamer.lookupParameterNames(method);
+
+                    Object[] args = new Object[parameters.length];
 
                     for (int i = 0; i < parameters.length; i++) {
                         Parameter parameter = parameters[i];
                         if (parameter.getType().isPrimitive() || parameter.getType().equals(String.class)) {
-                            if(!(parameter.isAnnotationPresent(JRequestParam.class))) {
-                                throw new ServletException("ETU002529 : le parametre:\"" +parameterNames[i]+"\" n'est pas annotee");
-                            }else if(parameter.isAnnotationPresent(JRequestParam.class)) {
-                                JRequestParam jrp=parameter.getAnnotation(JRequestParam.class);
-                                String value="";
+                            if (!(parameter.isAnnotationPresent(JRequestParam.class))) {
+                                throw new ServletException(
+                                        "ETU002529 : le parametre:\"" + parameterNames[i] + "\" n'est pas annotee");
+                            } else if (parameter.isAnnotationPresent(JRequestParam.class)) {
+                                JRequestParam jrp = parameter.getAnnotation(JRequestParam.class);
+                                String value = "";
                                 if (jrp.value().isEmpty()) {
-                                    value=req.getParameter(parameterNames[i]);
-                                }else{
-                                    value=req.getParameter(jrp.value());
+                                    value = req.getParameter(parameterNames[i]);
+                                } else {
+                                    value = req.getParameter(jrp.value());
                                 }
                                 Object convertedValue = Function.convertStringToType(value, parameter.getType());
-                                args[i]=convertedValue;
+                                args[i] = convertedValue;
                             }
-                        }else if(parameter.getType().equals(JSession.class)){
-                            args[i]=Function.HttpToJSession(req);
-                        }else if (parameter.getType().equals(JFile.class)) {
+                        } else if (parameter.getType().equals(JSession.class)) {
+                            args[i] = Function.HttpToJSession(req);
+                        } else if (parameter.getType().equals(JFile.class)) {
                             if (!(parameter.isAnnotationPresent(JRequestFile.class))) {
-                                throw new ServletException("ETU002529 : le parametre:\"" +parameterNames[i]+"\" n'est pas annotee");    
-                            }else{
-                                JRequestFile jrf=parameter.getAnnotation(JRequestFile.class);
-                                JFile jf=new JFile();
-                                String name="";
+                                throw new ServletException(
+                                        "ETU002529 : le parametre:\"" + parameterNames[i] + "\" n'est pas annotee");
+                            } else {
+                                JRequestFile jrf = parameter.getAnnotation(JRequestFile.class);
+                                JFile jf = new JFile();
+                                String name = "";
                                 if (jrf.value().isEmpty()) {
-                                    name=parameterNames[i];
-                                }else{
-                                    name=jrf.value();
+                                    name = parameterNames[i];
+                                } else {
+                                    name = jrf.value();
                                 }
                                 jf.setFilename(req.getPart(name).getSubmittedFileName());
                                 jf.setFilecontent(req.getPart(name).getInputStream());
-                                args[i]=jf;
+                                args[i] = jf;
                             }
-                        }else{
-                            String prefix="";
-                            if(!(parameter.isAnnotationPresent(JRequestObject.class))) {
-                                throw new ServletException("ETU002529 : le parametre:\"" +parameterNames[i]+"\" n'est pas annotee");
-                            }else {
+                        } else {
+                            String prefix = "";
+                            if (!(parameter.isAnnotationPresent(JRequestObject.class))) {
+                                throw new ServletException(
+                                        "ETU002529 : le parametre:\"" + parameterNames[i] + "\" n'est pas annotee");
+                            } else {
                                 if (parameter.getAnnotation(JRequestObject.class).value().isEmpty()) {
-                                    prefix=parameterNames[i];
-                                }else{
-                                    prefix=parameter.getAnnotation(JRequestObject.class).value();
+                                    prefix = parameterNames[i];
+                                } else {
+                                    prefix = parameter.getAnnotation(JRequestObject.class).value();
                                 }
                             }
 
-                            Object obj=parameter.getType().getDeclaredConstructor().newInstance();
+                            Object obj = parameter.getType().getDeclaredConstructor().newInstance();
                             // get the attributes of the object
-                            Field[] fields=parameter.getType().getDeclaredFields();
+                            Field[] fields = parameter.getType().getDeclaredFields();
                             for (Field field : fields) {
-                                Method meth=parameter.getType().getMethod("set"+Function.capitalize(field.getName()), field.getType());
-                                String name = prefix+"."+field.getName();
-                                String value=req.getParameter(name);
+                                Method meth = parameter.getType()
+                                        .getMethod("set" + Function.capitalize(field.getName()), field.getType());
+                                String name = prefix + "." + field.getName();
+                                String value = req.getParameter(name);
                                 Object convertedValue = Function.convertStringToType(value, field.getType());
                                 try {
                                     Function.checkField(field, convertedValue);
                                 } catch (ValidationException e) {
-                                    errors.put(name,e.getErrors());
+                                    errors.put(name, e.getErrors());
                                 }
                                 meth.invoke(obj, convertedValue);
                             }
 
-                            args[i]=obj;
+                            args[i] = obj;
                         }
                     }
 
-                    result=method.invoke(Class.forName(mp.getClassName()).getDeclaredConstructor().newInstance(), args);
+                    result = method.invoke(Class.forName(mp.getClassName()).getDeclaredConstructor().newInstance(),
+                            args);
 
                     // return to httpsession
-                    for (Object obj: args){
+                    for (Object obj : args) {
                         if (obj instanceof JSession) {
-                            Function.JSessionToHttp((JSession)obj, req);
+                            Function.JSessionToHttp((JSession) obj, req);
                         }
                     }
                 }
@@ -212,74 +239,75 @@ public class FrontController extends HttpServlet {
                     String json = gson.toJson(result);
 
                     out.println(json);
-                }else if (result instanceof ModelView){
-                    String json= ((ModelView)result).getDataAsJson();
+                } else if (result instanceof ModelView) {
+                    String json = ((ModelView) result).getDataAsJson();
 
-                    out.println(json);                    
-                }else{
+                    out.println(json);
+                } else {
                     throw new ServletException("Invalid return type.");
                 }
-                
-            }else{
+
+            } else {
                 if (result instanceof String) {
-                    out.println("Controller: "+ mp.getClassName());
-                    out.println("Method: "+ mp.getVerbMethods().get(0).getMethodName());
-                    out.println("Result: "+ result);
-                }else if (result instanceof ModelView){
+                    out.println("Controller: " + mp.getClassName());
+                    out.println("Method: " + mp.getVerbMethods().get(0).getMethodName());
+                    out.println("Result: " + result);
+                } else if (result instanceof ModelView) {
                     if (errors.isEmpty() == false) {
                         // get the previous url
-                        String url = (String)((ModelView)result).getData().get("errorRedirect");
-  
+                        String url = (String) ((ModelView) result).getData().get("errorRedirect");
+
                         req.setAttribute("errors", errors);
                         populateRequest(req);
 
-                        req.getRequestDispatcher(url).forward(req, res);  
+                        req.getRequestDispatcher(url).forward(req, res);
                     }
 
-                    String url= ((ModelView)result).getUrl();
-                    
-                    HashMap<String , Object> data= ((ModelView)result).getData();
-                    
+                    String url = ((ModelView) result).getUrl();
+
+                    HashMap<String, Object> data = ((ModelView) result).getData();
+
                     for (String key : data.keySet()) {
                         Object value = data.get(key);
                         req.setAttribute(key, value);
                     }
-    
-                    req.getRequestDispatcher(url).forward(req, res);    
-                }else{
+
+                    req.getRequestDispatcher(url).forward(req, res);
+                } else {
                     throw new ServletException("Invalid return type.");
                 }
             }
-        }else{
+        } else {
             res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-    
+
             // Write a custom message to the response body
             res.setContentType("text/plain");
             out.println("404 tsy hita : Tsy hita anaty serveur ny rohy nangatahinao");
             out.flush();
         }
-        
+
         // out.println("number of classes"+ this.getControllerList().size());
     }
 
+    public void getClasses() throws Exception {
 
-    public void getClasses() throws Exception{
-
-        ArrayList<String> classnames=new ArrayList<>();
+        ArrayList<String> classnames = new ArrayList<>();
         ServletContext context = getServletContext();
-        String packageName=context.getInitParameter("controller");
+        String packageName = context.getInitParameter("controller");
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         String path = packageName.replace('.', '/');
         Enumeration<URL> resources = classLoader.getResources(path);
         List<File> directories = new ArrayList<>();
-        
+
+        setAuthName(context.getInitParameter("auth_name"));
+
         while (resources.hasMoreElements()) {
             URL resource = resources.nextElement();
-            String decodePath=URLDecoder.decode(resource.getFile(), StandardCharsets.UTF_8.name());
-            decodePath=decodePath.substring(1);
+            String decodePath = URLDecoder.decode(resource.getFile(), StandardCharsets.UTF_8.name());
+            decodePath = decodePath.substring(1);
             directories.add(new File(decodePath));
         }
-        
+
         if (directories.isEmpty()) {
             throw new Exception("The controller package is empty or does not exists.");
         }
@@ -290,14 +318,14 @@ public class FrontController extends HttpServlet {
         }
 
         // for (Class<?> clazz : classes) {
-        //     if (clazz.isAnnotationPresent(Controller.class)) {
-        //         classnames.add(clazz.getName());
-        //     }
+        // if (clazz.isAnnotationPresent(Controller.class)) {
+        // classnames.add(clazz.getName());
+        // }
         // }
 
         for (Class<?> clazz : classes) {
             if (clazz.isAnnotationPresent(Controller.class)) {
-                Method[] methods=clazz.getDeclaredMethods();
+                Method[] methods = clazz.getDeclaredMethods();
 
                 for (Method method : methods) {
                     if (method.isAnnotationPresent(Url.class)) {
@@ -309,22 +337,25 @@ public class FrontController extends HttpServlet {
 
                         Url url = method.getAnnotation(Url.class);
                         if (url.value().isEmpty() == false) {
-                            VerbMethod vm = new VerbMethod(verb , method.getName());
-                            Mapping mapping=new Mapping(clazz.getName(),vm);
+                            VerbMethod vm = new VerbMethod(verb, method.getName());
+                            Mapping mapping = new Mapping(clazz.getName(), vm);
                             if (this.getMap().containsKey(url.value())) {
-                                Mapping temp =this.getMap().get(url.value());
+                                Mapping temp = this.getMap().get(url.value());
 
                                 // throw exception if the url is in another class
                                 if (temp.getClassName().equals(clazz.getName()) == false) {
-                                    throw new Exception("The URL \""+ url.value() +"\" is used in more than one class : "+ clazz.getName() + " and "+ temp.getClassName());
+                                    throw new Exception(
+                                            "The URL \"" + url.value() + "\" is used in more than one class : "
+                                                    + clazz.getName() + " and " + temp.getClassName());
                                 }
 
                                 if (temp.hasVerbMethod(vm) == false) {
                                     temp.addVerbMethod(vm);
-                                }else{
-                                    throw new Exception("The URL \""+ url.value() +"\" is already used with the verb '"+verb+"'");
+                                } else {
+                                    throw new Exception("The URL \"" + url.value()
+                                            + "\" is already used with the verb '" + verb + "'");
                                 }
-                            }else{
+                            } else {
                                 this.getMap().put(url.value(), mapping);
                             }
                         }
@@ -350,14 +381,14 @@ public class FrontController extends HttpServlet {
             if (file.isDirectory()) {
                 classes.addAll(findClasses(file, packageName + "." + file.getName()));
             } else if (file.getName().endsWith(".class")) {
-                classes.add(Class.forName(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
+                classes.add(
+                        Class.forName(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
             }
         }
         return classes;
     }
 
-    
-    public void populateRequest (HttpServletRequest request){
+    public void populateRequest(HttpServletRequest request) {
         Enumeration<String> parameterNamesEnum = request.getParameterNames();
         List<String> parameterNames = new ArrayList<>();
         while (parameterNamesEnum.hasMoreElements()) {
