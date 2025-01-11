@@ -1,4 +1,4 @@
-package mg.itu.prom16.annotation;
+package mg.itu.prom16.annotation.auth;
 
 import java.lang.annotation.*;
 
