@@ -93,13 +93,28 @@ public class FrontController extends HttpServlet {
         PrintWriter out = res.getWriter();
         HashMap<String, List<String>> errors = new HashMap<>();
         String message = req.getRequestURL().toString();
-        int lastINdex = message.lastIndexOf("/");
+        // int lastINdex = message.lastIndexOf("/");
+        
+        String path = req.getServletPath(); // Get the servlet path
+        
+        System.out.println("servlet path: " + path);
 
-        String path = "";
-
-        if (lastINdex != -1) {
-            path = message.substring(lastINdex + 1);
+        String pathInfo = req.getPathInfo(); // Get the path after the servlet path
+        if (pathInfo != null) {
+            path += pathInfo; // Combine servlet path and path info
         }
+
+        if (path.startsWith("/")) {
+            path = path.substring(1); // Remove the leading slash
+        }
+
+        System.out.println("path: " + path);
+
+        // String path = "";
+
+        // if (lastINdex != -1) {
+        //     path = message.substring(lastINdex + 1);
+        // }
 
         // for (String str : this.getControllerList()){
         // out.println("<p>"+ str +"</p>");
