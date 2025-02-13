@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
-
 import mg.itu.prom16.Exception.ValidationException;
 import mg.itu.prom16.annotation.Controller;
 import mg.itu.prom16.annotation.JPost;
@@ -22,6 +21,8 @@ import mg.itu.prom16.annotation.JRequestObject;
 import mg.itu.prom16.annotation.JRequestParam;
 import mg.itu.prom16.annotation.Restapi;
 import mg.itu.prom16.annotation.Url;
+import mg.itu.prom16.annotation.auth.ControllerAuth;
+import mg.itu.prom16.annotation.auth.Public;
 import mg.itu.prom16.util.Function;
 import mg.itu.prom16.util.JFile;
 import mg.itu.prom16.util.JSession;
@@ -92,13 +93,24 @@ public class FrontController extends HttpServlet {
         PrintWriter out = res.getWriter();
         HashMap<String, List<String>> errors = new HashMap<>();
         String message = req.getRequestURL().toString();
-        int lastINdex = message.lastIndexOf("/");
+        // int lastINdex = message.lastIndexOf("/");
 
-        String path = "";
-
-        if (lastINdex != -1) {
-            path = message.substring(lastINdex + 1);
+        String path = req.getServletPath(); // Get the servlet path
+        
+        String pathInfo = req.getPathInfo(); // Get the path after the servlet path
+        if (pathInfo != null) {
+            path += pathInfo; // Combine servlet path and path info
         }
+
+        if (path.startsWith("/")) {
+            path = path.substring(1); // Remove the leading slash
+        }
+
+        // String path = "";
+
+        // if (lastINdex != -1) {
+        //     path = message.substring(lastINdex + 1);
+        // }
 
         // for (String str : this.getControllerList()){
         // out.println("<p>"+ str +"</p>");
@@ -106,7 +118,6 @@ public class FrontController extends HttpServlet {
 
         if (getMap().containsKey(path)) {
             Mapping mp = getMap().get(path);
-
             Object result = null;
             boolean estRestApi = false;
             String requestMethod = req.getMethod();
@@ -116,7 +127,6 @@ public class FrontController extends HttpServlet {
 
             try {
                 VerbMethod single = mp.getSingleVerbMethod(requestMethod);
-
                 Method method = Function.findMethod(mp.getClassName(), single);
 
                 if (method == null) {
@@ -127,9 +137,27 @@ public class FrontController extends HttpServlet {
 
                 estRestApi = method.isAnnotationPresent(Restapi.class);
                 if (method != null) {
+                    //sprint 16 authentification
+                    Class<?> clazz = Class.forName(mp.getClassName());
+                    if (clazz.isAnnotationPresent(ControllerAuth.class)) {
+                        if (method.getAnnotation(Public.class) != null) {
+                            // do nothing
+                        }else{
+                            ControllerAuth auth = clazz.getAnnotation(ControllerAuth.class);
+                            JSession sess = Function.HttpToJSession(req);
+                            if (sess == null) {
+                                throw new ServletException("ETU002529 : Vous n'etes pas connecte");
+                            }
+                            if ((int) sess.get(getAuthName()) < auth.level()) {
+                                System.out.println("niveau de l'utilisateur : " + sess.get(getAuthName()));
+                                throw new ServletException("ETU002529 : Vous n'avez pas le droit d'acces a cette page");
+                            }
+                        }
+                    }
+
                     // sprint 15 authentification
-                    if (method.isAnnotationPresent(mg.itu.prom16.annotation.Authorization.class)) {
-                        mg.itu.prom16.annotation.Authorization auth = method.getAnnotation(mg.itu.prom16.annotation.Authorization.class);
+                    if (method.isAnnotationPresent(mg.itu.prom16.annotation.auth.Authorization.class)) {
+                        mg.itu.prom16.annotation.auth.Authorization auth = method.getAnnotation(mg.itu.prom16.annotation.auth.Authorization.class);
                         JSession sess = Function.HttpToJSession(req);
                         if (sess == null) {
                             throw new ServletException("ETU002529 : Vous n'etes pas connecte");
@@ -237,11 +265,9 @@ public class FrontController extends HttpServlet {
                 if (result instanceof String) {
                     Gson gson = new Gson();
                     String json = gson.toJson(result);
-
                     out.println(json);
                 } else if (result instanceof ModelView) {
                     String json = ((ModelView) result).getDataAsJson();
-
                     out.println(json);
                 } else {
                     throw new ServletException("Invalid return type.");
