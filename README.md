@@ -14,4 +14,8 @@ SRPINT 1
 
 
 AUTHORIZATION:
-mettre "auth" dans Jsession avec le niveau d'authorization de la methode
+mettez le nom de l'authorisation que vous voulez dans web.xml 
+<context-param>
+        <param-name>auth_name</param-name>
+        <param-value>auth</param-value>
+</context-param>
