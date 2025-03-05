@@ -2,6 +2,9 @@ package mg.itu.prom16.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -65,6 +68,12 @@ public class Function {
             return Short.parseShort(value);
         } else if (type == char.class || type == Character.class) {
             return value.charAt(0);
+        } else if (type == LocalDate.class) {
+            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
+            return LocalDate.parse(value, formatter);
+        } else if (type == LocalDateTime.class) {
+            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+            return LocalDateTime.parse(value, formatter);
         } else {
             return value;
         }

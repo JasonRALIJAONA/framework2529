@@ -231,13 +231,15 @@ public class FrontController extends HttpServlet {
                                         .getMethod("set" + Function.capitalize(field.getName()), field.getType());
                                 String name = prefix + "." + field.getName();
                                 String value = req.getParameter(name);
-                                Object convertedValue = Function.convertStringToType(value, field.getType());
-                                try {
-                                    Function.checkField(field, convertedValue);
-                                } catch (ValidationException e) {
-                                    errors.put(name, e.getErrors());
+                                if (value != null && value.isEmpty() == false) {
+                                    Object convertedValue = Function.convertStringToType(value, field.getType());
+                                    try {
+                                        Function.checkField(field, convertedValue);
+                                    } catch (ValidationException e) {
+                                        errors.put(name, e.getErrors());
+                                    }
+                                    meth.invoke(obj, convertedValue);
                                 }
-                                meth.invoke(obj, convertedValue);
                             }
 
                             args[i] = obj;
@@ -275,9 +277,18 @@ public class FrontController extends HttpServlet {
 
             } else {
                 if (result instanceof String) {
+                    // if string begin with redirect
+                    if (((String) result).startsWith("redirect:")) {
+                        String url = ((String) result).substring(9);
+
+                        res.sendRedirect(url);
+                    }
+
+
                     out.println("Controller: " + mp.getClassName());
                     out.println("Method: " + mp.getVerbMethods().get(0).getMethodName());
                     out.println("Result: " + result);
+
                 } else if (result instanceof ModelView) {
                     if (errors.isEmpty() == false) {
                         // get the previous url
@@ -290,6 +301,12 @@ public class FrontController extends HttpServlet {
                     }
 
                     String url = ((ModelView) result).getUrl();
+
+                    if (url.startsWith("redirect:")) {
+                        String urlRedir = ((String) url).substring(9);
+
+                        res.sendRedirect(urlRedir);
+                    }
 
                     HashMap<String, Object> data = ((ModelView) result).getData();
 
