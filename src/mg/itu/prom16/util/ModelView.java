@@ -1,8 +1,11 @@
 package mg.itu.prom16.util;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class ModelView {
     String url;
@@ -35,7 +38,12 @@ public class ModelView {
     }
 
     public String getDataAsJson() {
-        Gson gson = new Gson();
+        Gson gson = new GsonBuilder()
+        .registerTypeAdapter(LocalDate.class, new GsonAdapters.LocalDateSerializer())
+        .registerTypeAdapter(LocalDate.class, new GsonAdapters.LocalDateDeserializer())
+        .registerTypeAdapter(LocalDateTime.class, new GsonAdapters.LocalDateTimeSerializer())
+        .registerTypeAdapter(LocalDateTime.class, new GsonAdapters.LocalDateTimeDeserializer())
+        .create();
         return gson.toJson(this.data);
     }
 
