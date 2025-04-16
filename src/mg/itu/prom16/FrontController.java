@@ -90,13 +90,12 @@ public class FrontController extends HttpServlet {
     }
 
     public void processRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-        PrintWriter out = res.getWriter();
         HashMap<String, List<String>> errors = new HashMap<>();
         String message = req.getRequestURL().toString();
         // int lastINdex = message.lastIndexOf("/");
 
         String path = req.getServletPath(); // Get the servlet path
-        
+
         String pathInfo = req.getPathInfo(); // Get the path after the servlet path
         if (pathInfo != null) {
             path += pathInfo; // Combine servlet path and path info
@@ -109,7 +108,7 @@ public class FrontController extends HttpServlet {
         // String path = "";
 
         // if (lastINdex != -1) {
-        //     path = message.substring(lastINdex + 1);
+        // path = message.substring(lastINdex + 1);
         // }
 
         // for (String str : this.getControllerList()){
@@ -137,12 +136,12 @@ public class FrontController extends HttpServlet {
 
                 estRestApi = method.isAnnotationPresent(Restapi.class);
                 if (method != null) {
-                    //sprint 16 authentification
+                    // sprint 16 authentification
                     Class<?> clazz = Class.forName(mp.getClassName());
                     if (clazz.isAnnotationPresent(ControllerAuth.class)) {
                         if (method.getAnnotation(Public.class) != null) {
                             // do nothing
-                        }else{
+                        } else {
                             ControllerAuth auth = clazz.getAnnotation(ControllerAuth.class);
                             JSession sess = Function.HttpToJSession(req);
                             if (sess == null) {
@@ -157,7 +156,8 @@ public class FrontController extends HttpServlet {
 
                     // sprint 15 authentification
                     if (method.isAnnotationPresent(mg.itu.prom16.annotation.auth.Authorization.class)) {
-                        mg.itu.prom16.annotation.auth.Authorization auth = method.getAnnotation(mg.itu.prom16.annotation.auth.Authorization.class);
+                        mg.itu.prom16.annotation.auth.Authorization auth = method
+                                .getAnnotation(mg.itu.prom16.annotation.auth.Authorization.class);
                         JSession sess = Function.HttpToJSession(req);
                         if (sess == null) {
                             throw new ServletException("ETU002529 : Vous n'etes pas connecte");
@@ -261,61 +261,65 @@ public class FrontController extends HttpServlet {
                 e.printStackTrace();
                 throw new ServletException(e);
             }
-            if (estRestApi) {
-                res.setContentType("application/json");
 
+            if (estRestApi) {
                 if (result instanceof String) {
+                    res.setContentType("application/json");
                     Gson gson = new Gson();
                     String json = gson.toJson(result);
-                    out.println(json);
+                    res.getWriter().println(json);
+
                 } else if (result instanceof ModelView) {
+                    res.setContentType("application/json");
                     String json = ((ModelView) result).getDataAsJson();
-                    out.println(json);
+                    res.getWriter().println(json);
+
+                } else if (result instanceof byte[]) {
+                    // Set the response content type to PDF
+                    res.setContentType("application/pdf");
+
+                    res.setHeader("Content-Disposition", "inline; filename=\"document.pdf\"");
+
+                    res.getOutputStream().write((byte[]) result);
+                    res.getOutputStream().flush();
                 } else {
                     throw new ServletException("Invalid return type.");
                 }
-
             } else {
                 if (result instanceof String) {
-                    // if string begin with redirect
                     if (((String) result).startsWith("redirect:")) {
                         String url = ((String) result).substring(9);
-
-                        res.sendRedirect(url);
+                        res.sendRedirect(url); // Redirect the response
+                    } else {
+                        res.setContentType("text/plain");
+                        res.getWriter().println("Controller: " + mp.getClassName());
+                        res.getWriter().println("Method: " + mp.getVerbMethods().get(0).getMethodName());
+                        res.getWriter().println("Result: " + result);
                     }
-
-
-                    out.println("Controller: " + mp.getClassName());
-                    out.println("Method: " + mp.getVerbMethods().get(0).getMethodName());
-                    out.println("Result: " + result);
-
                 } else if (result instanceof ModelView) {
-                    if (errors.isEmpty() == false) {
-                        // get the previous url
+                    if (!errors.isEmpty()) {
                         String url = (String) ((ModelView) result).getData().get("errorRedirect");
-
                         req.setAttribute("errors", errors);
                         populateRequest(req);
+                        req.getRequestDispatcher(url).forward(req, res);
+                    } else {
+                        String url = ((ModelView) result).getUrl();
+
+                        if (url.startsWith("redirect:")) {
+                            String urlRedir = ((String) url).substring(9);
+
+                            res.sendRedirect(urlRedir);
+                        }
+
+                        HashMap<String, Object> data = ((ModelView) result).getData();
+
+                        for (String key : data.keySet()) {
+                            Object value = data.get(key);
+                            req.setAttribute(key, value);
+                        }
 
                         req.getRequestDispatcher(url).forward(req, res);
                     }
-
-                    String url = ((ModelView) result).getUrl();
-
-                    if (url.startsWith("redirect:")) {
-                        String urlRedir = ((String) url).substring(9);
-
-                        res.sendRedirect(urlRedir);
-                    }
-
-                    HashMap<String, Object> data = ((ModelView) result).getData();
-
-                    for (String key : data.keySet()) {
-                        Object value = data.get(key);
-                        req.setAttribute(key, value);
-                    }
-
-                    req.getRequestDispatcher(url).forward(req, res);
                 } else {
                     throw new ServletException("Invalid return type.");
                 }
@@ -325,8 +329,8 @@ public class FrontController extends HttpServlet {
 
             // Write a custom message to the response body
             res.setContentType("text/plain");
-            out.println("404 tsy hita : Tsy hita anaty serveur ny rohy nangatahinao");
-            out.flush();
+            res.getWriter().println("404 tsy hita : Tsy hita anaty serveur ny rohy nangatahinao");
+            res.getWriter().flush();
         }
 
         // out.println("number of classes"+ this.getControllerList().size());
