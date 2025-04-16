@@ -2,7 +2,7 @@ package mg.itu.prom16;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
+// import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -23,6 +23,7 @@ import mg.itu.prom16.annotation.Restapi;
 import mg.itu.prom16.annotation.Url;
 import mg.itu.prom16.annotation.auth.ControllerAuth;
 import mg.itu.prom16.annotation.auth.Public;
+import mg.itu.prom16.util.APIAttachment;
 import mg.itu.prom16.util.Function;
 import mg.itu.prom16.util.JFile;
 import mg.itu.prom16.util.JSession;
@@ -91,7 +92,7 @@ public class FrontController extends HttpServlet {
 
     public void processRequest(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         HashMap<String, List<String>> errors = new HashMap<>();
-        String message = req.getRequestURL().toString();
+        // String message = req.getRequestURL().toString();
         // int lastINdex = message.lastIndexOf("/");
 
         String path = req.getServletPath(); // Get the servlet path
@@ -274,13 +275,13 @@ public class FrontController extends HttpServlet {
                     String json = ((ModelView) result).getDataAsJson();
                     res.getWriter().println(json);
 
-                } else if (result instanceof byte[]) {
+                } else if (result instanceof APIAttachment) {
                     // Set the response content type to PDF
-                    res.setContentType("application/pdf");
+                    APIAttachment apiAttachment = (APIAttachment) result;
+                    res.setContentType(apiAttachment.getContentType());
+                    res.setHeader("Content-Disposition", "inline; filename=\"" + apiAttachment.getFilename() + "\"");
 
-                    res.setHeader("Content-Disposition", "inline; filename=\"document.pdf\"");
-
-                    res.getOutputStream().write((byte[]) result);
+                    res.getOutputStream().write(apiAttachment.getFileData());
                     res.getOutputStream().flush();
                 } else {
                     throw new ServletException("Invalid return type.");
