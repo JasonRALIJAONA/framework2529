@@ -21,7 +21,7 @@ FOR /R "%SRC_DIR%" %%F IN (*.java) DO (
 )
 
 cd "%TEMP_SRC%"
-javac -sourcepath "%TEMP_SRC%" -d "%BIN_DIR%" -cp "%LIB_DIR2%;%LIB_DIR%/paranamer-2.8.jar;%LIB_DIR%/gson-2.8.2.jar" *.java
+javac -sourcepath "%TEMP_SRC%" -d "%BIN_DIR%" -cp "%LIB_DIR2%;%LIB_DIR%/paranamer-2.8.jar;%LIB_DIR%/gson-2.8.2.jar;%LIB_DIR%/commons-beanutils-1.9.4.jar;%LIB_DIR%/opencsv-5.8.jar" *.java
 
 cd "%BIN_DIR%"
 jar -cvf "%WORK_DIR%/framework2529.jar" -C "%BIN_DIR%" .
